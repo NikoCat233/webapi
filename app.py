@@ -148,7 +148,7 @@ async def _():
         else:
             list += '最近封禁记录:\n'
             for ban in banHistory:
-                list += f'[{'🐕' if ban['watchdog'] else '👮'}] [{ban['formated']}] banned {ban['number']} player.\n'
+                list += f"[{'🐕' if ban['watchdog'] else '👮'}] [{ban['formated']}] banned {ban['number']} player.\n"
             list = list[:-1]
 
     return {'wdr':list}
@@ -171,7 +171,7 @@ async def _():
         else:
             list += '最近封禁记录:\n'
             for ban in banHistory:
-                list += f'[{'🐕' if ban['watchdog'] else '👮'}] [{ban['formated']}] banned {ban['number']} player.\n'
+                list += f"[{'🐕' if ban['watchdog'] else '👮'}] [{ban['formated']}] banned {ban['number']} player.\n"
             list = list[:-1]
 
     return Response(content=list, media_type='text/plain')
