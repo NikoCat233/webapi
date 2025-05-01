@@ -67,7 +67,7 @@ lastUpdated = time.time()
 async def getBanData():
     global staff,watchdog,staffHalfHourCalc,banHistory,LockBanHistory,lastUpdated
     punishmentStats = None
-    punishmentStats = session.get('https://proxy.23312355.xyz/https://api.plancke.io/hypixel/v1/punishmentStats',headers=headers).json()['record']
+    punishmentStats = session.get('https://api.plancke.io/hypixel/v1/punishmentStats',headers=headers).json()['record']
     staff['total'] = punishmentStats['staff_total']
     watchdog['total'] = punishmentStats['watchdog_total']
 
