@@ -2,3 +2,4 @@ apscheduler
 requests
 FastAPI
 fastapi-cli
+fake-useragent

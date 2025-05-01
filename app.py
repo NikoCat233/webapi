@@ -8,6 +8,7 @@ from datetime import datetime
 from timecalc import time_since
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+from fake_useragent import UserAgent
 
 session = requests.Session()
 retry = Retry(total=30, backoff_factor=1)
@@ -17,23 +18,6 @@ session.mount('https://',adapter)
 session.mount('http://',adapter)
 
 app = FastAPI()
-
-headers = {
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-    'Accept-Encoding': 'gzip, deflate, br, zstd',
-    'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6',
-    'Cache-Control': 'max-age=0',
-    'Priority': 'u=0, i',
-    'Sec-Ch-Ua': '"Microsoft Edge";v="135", "Not-A.Brand";v="8", "Chromium";v="135"',
-    'Sec-Ch-Ua-Mobile': '?0',
-    'Sec-Ch-Ua-Platform': '"Windows"',
-    'Sec-Fetch-Dest': 'document',
-    'Sec-Fetch-Mode': 'navigate',
-    'Sec-Fetch-Site': 'none',
-    'Sec-Fetch-User': '?1',
-    'Upgrade-Insecure-Requests': '1',
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36 Edg/135.0.0.0'
-}
 
 scheduler = AsyncIOScheduler()
 
@@ -66,8 +50,9 @@ lastUpdated = time.time()
 @scheduler.scheduled_job('interval', seconds=10,id='getBanData')
 async def getBanData():
     global staff,watchdog,staffHalfHourCalc,banHistory,LockBanHistory,lastUpdated
-    punishmentStats = None
-    punishmentStats = session.get('https://api.plancke.io/hypixel/v1/punishmentStats',headers=headers).json()['record']
+    punishmentStats = session.get('https://api.plancke.io/hypixel/v1/punishmentStats',headers={
+        'User-Agent': UserAgent().random,
+    }).json()['record']
     staff['total'] = punishmentStats['staff_total']
     watchdog['total'] = punishmentStats['watchdog_total']
 
