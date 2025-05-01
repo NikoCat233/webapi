@@ -6,6 +6,15 @@ from threading import Lock
 import time
 from datetime import datetime
 from timecalc import time_since
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+
+session = requests.Session()
+retry = Retry(total=30, backoff_factor=1)
+
+adapter = HTTPAdapter(max_retries=retry)
+session.mount('https://',adapter)
+session.mount('http://',adapter)
 
 app = FastAPI()
 
@@ -54,10 +63,11 @@ staff = {
 
 lastUpdated = time.time()
 
-@scheduler.scheduled_job('interval', seconds=10)
+@scheduler.scheduled_job('interval', seconds=10,id='getBanData')
 async def getBanData():
     global staff,watchdog,staffHalfHourCalc,banHistory,LockBanHistory,lastUpdated
-    punishmentStats = requests.get('https://proxy.23312355.xyz/https://api.plancke.io/hypixel/v1/punishmentStats',headers=headers).json()['record']
+    punishmentStats = None
+    punishmentStats = session.get('https://proxy.23312355.xyz/https://api.plancke.io/hypixel/v1/punishmentStats',headers=headers).json()['record']
     staff['total'] = punishmentStats['staff_total']
     watchdog['total'] = punishmentStats['watchdog_total']
 
@@ -106,7 +116,7 @@ async def getBanData():
 
 
 # remove the number that is older than 30 minutes
-@scheduler.scheduled_job('interval', seconds=1)
+@scheduler.scheduled_job('interval', seconds=3,id='removeHalfHour')
 async def _():
     staffHalfHourCalc.remove()
     staff['last_half_hour'] = staffHalfHourCalc.get_count()
