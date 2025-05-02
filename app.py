@@ -58,6 +58,7 @@ async def getBanData():
     }).json()['record']
     staff['total'] = punishmentStats['staff_total']
     watchdog['total'] = punishmentStats['watchdog_total']
+    watchdog['last_minute'] = punishmentStats['watchdog_lastMinute']
 
     if staff['last_day'] == -1 or watchdog['last_day'] == -1:
         staff['last_day'] = punishmentStats['staff_rollingDaily']
