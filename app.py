@@ -126,7 +126,8 @@ async def _():
         return {'staff':staff,'watchdog':watchdog,'banHistory':banHistory,'lastUpdated':{'timestamp':lastUpdated,'formated':datetime.fromtimestamp(lastUpdated,tz=tz).strftime('%H:%M:%S')}}
 
 def getAgo(gtime):
-    return f'{time.strftime("%H:%M:%S", time.localtime(gtime))} {time_since(gtime)}'
+    nd = datetime.fromtimestamp(gtime,tz=tz)
+    return f'{nd:%H:%M:%S} {time_since(gtime)}'
 
 @app.get('/wdr')
 async def _():
