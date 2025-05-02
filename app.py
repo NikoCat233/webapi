@@ -9,6 +9,9 @@ from timecalc import time_since
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from fake_useragent import UserAgent
+from zoneinfo import ZoneInfo
+
+tz = ZoneInfo('Asia/Shanghai')
 
 session = requests.Session()
 retry = Retry(total=30, backoff_factor=1)
@@ -49,7 +52,7 @@ lastUpdated = time.time()
 
 @scheduler.scheduled_job('interval', seconds=10,id='getBanData')
 async def getBanData():
-    global staff,watchdog,staffHalfHourCalc,banHistory,LockBanHistory,lastUpdated
+    global staff,watchdog,staffHalfHourCalc,banHistory,LockBanHistory,lastUpdated,tz
     punishmentStats = session.get('https://api.plancke.io/hypixel/v1/punishmentStats',headers={
         'User-Agent': UserAgent().random,
     }).json()['record']
@@ -72,7 +75,7 @@ async def getBanData():
         return
 
     now = time.time()
-    ndatetime = datetime.fromtimestamp(now)
+    ndatetime = datetime.fromtimestamp(now,tz=tz)
 
     with LockBanHistory:
         while len(banHistory) > 10:
@@ -118,9 +121,9 @@ async def _():
 
 @app.get('/')
 async def _():
-    global staff,watchdog,banHistory,LockBanHistory,lastUpdated
+    global staff,watchdog,banHistory,LockBanHistory,lastUpdated,tz
     with LockBanHistory:
-        return {'staff':staff,'watchdog':watchdog,'banHistory':banHistory,'lastUpdated':{'timestamp':lastUpdated,'formated':datetime.fromtimestamp(lastUpdated).strftime('%H:%M:%S')}}
+        return {'staff':staff,'watchdog':watchdog,'banHistory':banHistory,'lastUpdated':{'timestamp':lastUpdated,'formated':datetime.fromtimestamp(lastUpdated,tz=tz).strftime('%H:%M:%S')}}
 
 def getAgo(gtime):
     return f'{time.strftime("%H:%M:%S", time.localtime(gtime))} {time_since(gtime)}'
