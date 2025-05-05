@@ -50,7 +50,7 @@ staff = {
 
 lastUpdated = time.time()
 
-@scheduler.scheduled_job('interval', seconds=10,id='getBanData')
+@scheduler.scheduled_job('interval', seconds=6,id='getBanData')
 async def getBanData():
     global staff,watchdog,staffHalfHourCalc,banHistory,LockBanHistory,lastUpdated,tz
     punishmentStats = session.get('https://api.plancke.io/hypixel/v1/punishmentStats',headers={
