@@ -36,16 +36,16 @@ LockBanHistory = Lock()
 
 watchdog = {
     "last_minute":0,
-    "last_day":-1,
-    "total":0,
+    "last_day":0,
+    "total":-1,
 }
 
 staffHalfHourCalc = NumberManager()
 
 staff = {
     "last_half_hour":0,
-    "last_day":-1,
-    "total":0,
+    "last_day":0,
+    "total":-1,
 }
 
 lastUpdated = time.time()
@@ -56,22 +56,22 @@ async def getBanData():
     punishmentStats = session.get('https://api.plancke.io/hypixel/v1/punishmentStats',headers={
         'User-Agent': UserAgent().random,
     }).json()['record']
-    staff['total'] = punishmentStats['staff_total']
-    watchdog['total'] = punishmentStats['watchdog_total']
+    staff['last_day'] = punishmentStats['staff_rollingDaily']
+    watchdog['last_day'] = punishmentStats['watchdog_rollingDaily']
     watchdog['last_minute'] = punishmentStats['watchdog_lastMinute']
 
-    if staff['last_day'] == -1 or watchdog['last_day'] == -1:
-        staff['last_day'] = punishmentStats['staff_rollingDaily']
-        watchdog['last_day'] = punishmentStats['watchdog_rollingDaily']
+    if staff['total'] == -1 or watchdog['total'] == -1:
+        staff['total'] = punishmentStats['staff_total']
+        watchdog['total'] = punishmentStats['watchdog_total']
         lastUpdated = time.time()
         return
 
-    wdiff = punishmentStats['watchdog_rollingDaily'] - watchdog['last_day']
-    sdiff = punishmentStats['staff_rollingDaily'] - staff['last_day']
+    wdiff = punishmentStats['watchdog_total'] - watchdog['total']
+    sdiff = punishmentStats['staff_total'] - staff['total']
 
     if wdiff <= 0 and sdiff <= 0:
-        watchdog['last_day'] = punishmentStats['watchdog_rollingDaily']
-        staff['last_day'] = punishmentStats['staff_rollingDaily']
+        staff['total'] = punishmentStats['staff_total']
+        watchdog['total'] = punishmentStats['watchdog_total']
         lastUpdated = time.time()
         return
 
@@ -99,8 +99,8 @@ async def getBanData():
             staffHalfHourCalc.add(sdiff)
             banHistory.insert(0,data)
 
-    watchdog['last_day'] = punishmentStats['watchdog_rollingDaily']
-    staff['last_day'] = punishmentStats['staff_rollingDaily']
+    staff['total'] = punishmentStats['staff_total']
+    watchdog['total'] = punishmentStats['watchdog_total']
     lastUpdated = time.time()
 
 
