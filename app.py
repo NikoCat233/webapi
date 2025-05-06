@@ -1,7 +1,8 @@
 import json
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from numbermanager import NumberManager
-from fastapi import FastAPI, Response
+from fastapi import FastAPI, Response, Request
+from fastapi.responses import RedirectResponse
 import requests
 from threading import Lock
 import time
@@ -188,6 +189,32 @@ async def _():
             media_type="application/json; charset=utf-8",
             headers={"Cache-Control": "max-age=3, public"},
         )
+
+
+@app.get("/index.html")
+async def redirect_index():
+    """重定向 /index.html 到根路径"""
+    return RedirectResponse(url="/", status_code=301)
+
+
+@app.get("/favicon.ico")
+async def redirect_favicon():
+    """重定向 /favicon.ico 到宝宝肚肚打雷了"""
+    return RedirectResponse(url="https://au.niko233.me/favicon.ico", status_code=301)
+
+
+@app.exception_handler(404)
+async def custom_404_handler(request: Request, exc):
+    """处理所有未定义的路由，重定向到指定网址"""
+    # 检查是否是 /wdr/ 或 /wdr/raw/ 路径，这些应该被正常处理而不是重定向
+    path = request.url.path
+    if path.rstrip("/") == "/wdr" or path.rstrip("/") == "/wdr/raw":
+        # 这种情况不应该发生，因为这些路径已经有定义的处理函数
+        # 但如果发生了，我们将删除尾部斜杠并重定向到正确的路径
+        return RedirectResponse(url=path.rstrip("/"), status_code=307)
+
+    # 其他所有未定义的路由重定向到根路径
+    return RedirectResponse(url="/", status_code=301)
 
 
 def getAgo(gtime):
