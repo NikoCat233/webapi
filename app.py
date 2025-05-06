@@ -13,6 +13,14 @@ from urllib3.util.retry import Retry
 from fake_useragent import UserAgent
 from zoneinfo import ZoneInfo
 import uvicorn
+import logging
+
+# 设置日志配置
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+)
+logger = logging.getLogger("uvicorn")
 
 tz = ZoneInfo("Asia/Shanghai")
 
@@ -24,6 +32,32 @@ session.mount("https://", adapter)
 session.mount("http://", adapter)
 
 app = FastAPI()
+
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    # 获取客户端真实IP
+    forwarded_for = request.headers.get("X-Forwarded-For")
+    if forwarded_for:
+        # 如果有多个IP，第一个通常是客户端的真实IP
+        client_ip = forwarded_for.split(",")[0].strip()
+    else:
+        # 如果没有X-Forwarded-For头，使用直接连接的客户端IP
+        client_ip = request.client.host if request.client else "unknown"
+
+    # 记录请求开始
+    logger.info(f"Request from {client_ip}: {request.method} {request.url.path}")
+
+    # 处理请求
+    response = await call_next(request)
+
+    # 记录响应状态
+    logger.info(
+        f"Response to {client_ip}: {request.method} {request.url.path} - Status: {response.status_code}"
+    )
+
+    return response
+
 
 # Configure FastAPI to run on port 8963
 
