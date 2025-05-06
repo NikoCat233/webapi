@@ -178,13 +178,13 @@ async def _():
                     "%H:%M:%S"
                 ),
             },
-            "SakuraNiroku": "github.com/HypixelBanTrackerProject"
+            "SakuraNiroku": "github.com/HypixelBanTrackerProject",
         }
 
         return Response(
             content=json.dumps(response, ensure_ascii=False),
             media_type="application/json; charset=utf-8",
-            headers={"Cache-Control": "max-age=3, must-revalidate"},
+            headers={"Cache-Control": "max-age=3, public"},
         )
 
 
@@ -217,7 +217,7 @@ async def _():
     return Response(
         content=json.dumps({"wdr": list}, ensure_ascii=False),
         media_type="application/json; charset=utf-8",
-        headers={"Cache-Control": "max-age=3, must-revalidate"},
+        headers={"Cache-Control": "max-age=3, public"},
     )
 
 
@@ -246,7 +246,7 @@ async def _():
     return Response(
         content=list,
         media_type="text/plain; charset=utf-8",
-        headers={"Cache-Control": "max-age=3, must-revalidate"},
+        headers={"Cache-Control": "max-age=3, public"},
     )
 
 
