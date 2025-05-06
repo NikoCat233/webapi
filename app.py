@@ -1,3 +1,4 @@
+import json
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from numbermanager import NumberManager
 from fastapi import FastAPI, Response
@@ -167,7 +168,7 @@ async def _():
 async def _():
     global staff, watchdog, banHistory, LockBanHistory, lastUpdated, tz
     with LockBanHistory:
-        return {
+        response = {
             "staff": staff,
             "watchdog": watchdog,
             "banHistory": banHistory,
@@ -178,6 +179,12 @@ async def _():
                 ),
             },
         }
+
+        return Response(
+            content=json.dumps(response, ensure_ascii=False),
+            media_type="application/json; charset=utf-8",
+            headers={"Cache-Control": "max-age=3, must-revalidate"},
+        )
 
 
 def getAgo(gtime):
@@ -206,7 +213,11 @@ async def _():
                 list += f"[{'🐕' if ban['watchdog'] else '👮'}] [{ban['formated']}] banned {ban['number']} player.\n"
             list = list[:-1]
 
-    return {"wdr": list}
+    return Response(
+        content=json.dumps({"wdr": list}, ensure_ascii=False),
+        media_type="application/json; charset=utf-8",
+        headers={"Cache-Control": "max-age=3, must-revalidate"},
+    )
 
 
 @app.get("/wdr/raw")
@@ -230,7 +241,12 @@ async def _():
                 list += f"[{'🐕' if ban['watchdog'] else '👮'}] [{ban['formated']}] banned {ban['number']} player.\n"
             list = list[:-1]
 
-    return Response(content=list, media_type="text/plain")
+    # 添加cache-control头部
+    return Response(
+        content=list,
+        media_type="text/plain; charset=utf-8",
+        headers={"Cache-Control": "max-age=3, must-revalidate"},
+    )
 
 
 if __name__ == "__main__":
