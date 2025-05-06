@@ -178,6 +178,7 @@ async def _():
                     "%H:%M:%S"
                 ),
             },
+            "SakuraNiroku": "github.com/HypixelBanTrackerProject"
         }
 
         return Response(
