@@ -10,6 +10,7 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from fake_useragent import UserAgent
 from zoneinfo import ZoneInfo
+import uvicorn
 
 tz = ZoneInfo("Asia/Shanghai")
 
@@ -21,6 +22,12 @@ session.mount("https://", adapter)
 session.mount("http://", adapter)
 
 app = FastAPI()
+
+# Configure FastAPI to run on port 8963
+
+# This configuration will be used when you run the app directly
+# For example: if __name__ == "__main__": uvicorn.run("app:app", host="0.0.0.0", port=8963)
+# But won't affect when imported as a module
 
 scheduler = AsyncIOScheduler()
 
@@ -54,60 +61,88 @@ lastUpdated = time.time()
 @scheduler.scheduled_job("interval", seconds=6, id="getBanData")
 async def getBanData():
     global staff, watchdog, staffHalfHourCalc, banHistory, LockBanHistory, lastUpdated, tz
-    punishmentStats = session.get(
-        "https://api.plancke.io/hypixel/v1/punishmentStats",
-        headers={
-            "User-Agent": UserAgent().random,
-            "Referer": "https://plancke.io/",
-            "Accept": "application/json",
-        },
-    ).json()["record"]
-    staff["last_day"] = punishmentStats["staff_rollingDaily"]
-    watchdog["last_day"] = punishmentStats["watchdog_rollingDaily"]
-    watchdog["last_minute"] = punishmentStats["watchdog_lastMinute"]
+    try:
+        response = session.get(
+            "https://api.plancke.io/hypixel/v1/punishmentStats",
+            headers={
+                "User-Agent": UserAgent().random,
+                "Accept": "application/json",
+                "Accept-Encoding": "gzip, deflate, br",
+            },
+            timeout=3,
+        )
 
-    if staff["total"] == -1 or watchdog["total"] == -1:
+        response.raise_for_status()
+
+        print(f"Response status: {response.status_code}")
+
+        data = response.json()
+        if "record" not in data:
+            print(f"Error: 'record' not found in response: {data}")
+            return
+
+        punishmentStats = data["record"]
+
+        staff["last_day"] = punishmentStats["staff_rollingDaily"]
+        watchdog["last_day"] = punishmentStats["watchdog_rollingDaily"]
+        watchdog["last_minute"] = punishmentStats["watchdog_lastMinute"]
+
+        if staff["total"] == -1 or watchdog["total"] == -1:
+            staff["total"] = punishmentStats["staff_total"]
+            watchdog["total"] = punishmentStats["watchdog_total"]
+            lastUpdated = time.time()
+            return
+
+        wdiff = punishmentStats["watchdog_total"] - watchdog["total"]
+        sdiff = punishmentStats["staff_total"] - staff["total"]
+
+        if wdiff <= 0 and sdiff <= 0:
+            staff["total"] = punishmentStats["staff_total"]
+            watchdog["total"] = punishmentStats["watchdog_total"]
+            lastUpdated = time.time()
+            return
+
+        now = time.time()
+        ndatetime = datetime.fromtimestamp(now, tz=tz)
+
+        with LockBanHistory:
+            while len(banHistory) > 10:
+                banHistory.pop()
+
+            if wdiff > 0:
+                data = banHistoryExample.copy()
+                data["time"] = now
+                data["watchdog"] = True
+                data["number"] = wdiff
+                data["formated"] = f"{ndatetime:%H:%M:%S}"
+                banHistory.insert(0, data)
+
+            if sdiff > 0:
+                data = banHistoryExample.copy()
+                data["time"] = now
+                data["watchdog"] = False
+                data["number"] = sdiff
+                data["formated"] = f"{ndatetime:%H:%M:%S}"
+                staffHalfHourCalc.add(sdiff)
+                banHistory.insert(0, data)
+
         staff["total"] = punishmentStats["staff_total"]
         watchdog["total"] = punishmentStats["watchdog_total"]
         lastUpdated = time.time()
+    except requests.exceptions.RequestException as e:
+        print(f"Request error: {e}")
         return
-
-    wdiff = punishmentStats["watchdog_total"] - watchdog["total"]
-    sdiff = punishmentStats["staff_total"] - staff["total"]
-
-    if wdiff <= 0 and sdiff <= 0:
-        staff["total"] = punishmentStats["staff_total"]
-        watchdog["total"] = punishmentStats["watchdog_total"]
-        lastUpdated = time.time()
+    except ValueError as e:
+        print(f"JSON decode error: {e}")
+        print(f"Response content: {response.text}")
         return
-
-    now = time.time()
-    ndatetime = datetime.fromtimestamp(now, tz=tz)
-
-    with LockBanHistory:
-        while len(banHistory) > 10:
-            banHistory.pop()
-
-        if wdiff > 0:
-            data = banHistoryExample.copy()
-            data["time"] = now
-            data["watchdog"] = True
-            data["number"] = wdiff
-            data["formated"] = f"{ndatetime:%H:%M:%S}"
-            banHistory.insert(0, data)
-
-        if sdiff > 0:
-            data = banHistoryExample.copy()
-            data["time"] = now
-            data["watchdog"] = False
-            data["number"] = sdiff
-            data["formated"] = f"{ndatetime:%H:%M:%S}"
-            staffHalfHourCalc.add(sdiff)
-            banHistory.insert(0, data)
-
-    staff["total"] = punishmentStats["staff_total"]
-    watchdog["total"] = punishmentStats["watchdog_total"]
-    lastUpdated = time.time()
+    except KeyError as e:
+        print(f"Key error: {e}")
+        print(f"Available keys: {data.keys() if 'data' in locals() else 'N/A'}")
+        return
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+        return
 
 
 # remove the number that is older than 30 minutes
@@ -196,3 +231,7 @@ async def _():
             list = list[:-1]
 
     return Response(content=list, media_type="text/plain")
+
+
+if __name__ == "__main__":
+    uvicorn.run("app:app", host="0.0.0.0", port=8963)
