@@ -37,6 +37,12 @@ adapter = HTTPAdapter(max_retries=retry)
 session.mount("https://", adapter)
 session.mount("http://", adapter)
 
+# 配置 session 使用本地 socks 代理
+session.proxies = {
+    "http": "socks5://127.0.0.1:6666",
+    "https": "socks5://127.0.0.1:6666",
+}
+
 app = FastAPI()
 
 
@@ -175,9 +181,21 @@ async def getBanData():
         response = session.get(
             "https://api.plancke.io/hypixel/v1/punishmentStats",
             headers={
-                "User-Agent": UserAgent().random,
-                "Accept": "application/json",
-                "Accept-Encoding": "gzip, deflate, br",
+                "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
+                "accept": "application/json, text/javascript, */*; q=0.01",
+                "accept-encoding": "gzip, deflate, br, zstd",
+                "accept-language": "en",
+                "cache-control": "no-cache",
+                "pragma": "no-cache",
+                "priority": "u=1, i",
+                "origin": "https://plancke.io",
+                "referer": "https://plancke.io/",
+                "sec-ch-ua": '"Chromium";v="136", "Google Chrome";v="136", "Not.A/Brand";v="99"',
+                "sec-ch-ua-mobile": "?0",
+                "sec-ch-ua-platform": '"Windows"',
+                "sec-fetch-dest": "empty",
+                "sec-fetch-mode": "cors",
+                "sec-fetch-site": "same-site",
             },
             timeout=3,
         )
