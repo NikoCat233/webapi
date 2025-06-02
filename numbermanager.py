@@ -17,6 +17,10 @@ class NumberManager:
         with self.controlLock:
             self.numbers.append({"number": number, "ctime": current_time})
 
+    def insert(self, number, ctime):
+        with self.controlLock:
+            self.numbers.append({"number": number, "ctime": ctime})
+
     def remove(self):
         """删除30分钟前添加的数字"""
         current_time = time.time()
@@ -39,3 +43,8 @@ class NumberManager:
             for num in self.numbers:
                 count += num["number"]
         return count
+
+    def get_ary(self):
+        """获取当前数字的列表"""
+        with self.controlLock:
+            return self.numbers.copy()
